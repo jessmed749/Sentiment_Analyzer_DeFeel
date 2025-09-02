@@ -1,9 +1,17 @@
+import os
 from fastapi import FastAPI, Body
 from pydantic import BaseModel, Field
 from transformers import pipeline
 from typing import Any, Dict
+from dotenv import load_dotenv
 
 app = FastAPI()
+
+# Load environment variables
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../.env.dev'))
+
+MODEL_PATH = os.getenv("MODEL_PATH", "distilbert-base-uncased-finetuned-sst-2-english").strip('" ')
+APP_ENV = os.getenv("APP_ENV", "dev").strip('" ')
 
 class PredictRequest(BaseModel):
     id: str = Field(..., example="42")
@@ -26,11 +34,16 @@ class PredictResponse(BaseModel):
 @app.on_event("startup")
 def load_model():
     global sentiment_pipeline
-    sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+    sentiment_pipeline = pipeline("sentiment-analysis", model=MODEL_PATH)
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "message": "Service healthy"}
+    return {
+        "status": "ok",
+        "message": "Service healthy",
+        "env": APP_ENV,
+        "model_path": MODEL_PATH,
+    }
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(payload: PredictRequest = Body(...)):
@@ -45,3 +58,4 @@ def predict(payload: PredictRequest = Body(...)):
         "label": result["label"],
         "score": float(result["score"]),
     }
+    
