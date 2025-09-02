@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv*/
+.venv/
+env/
+venv/
+.venv311/
+.venv311/
+
+# Environment files
+.env
+.env.*
+!.env.example   # keep a template if you want
+
+# IDE/editor and stuff
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+
+# Byte-compiled / cache
+.cache/
+.pytest_cache/
+
+# Kafka / data volumes (local dev only)
+infra/kafka-data/
+infra/zookeeper-data/
+
+# Model artifacts
+*.bin
+*.pt
+*.pth
+*.onnx
+
+# OS files
+.DS_Store
+Thumbs.db
