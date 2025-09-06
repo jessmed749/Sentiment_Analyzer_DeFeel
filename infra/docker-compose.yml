@@ -28,12 +28,15 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
   inference:
     build:
-      context: ..
-      dockerfile: inference/Dockerfile
+      context: ../inference          
+      dockerfile: Dockerfile
     environment:
       - KAFKA_BOOTSTRAP=kafka:9092
       - RAW_TOPIC=events.raw
       - SCORED_TOPIC=events.scored
       - GROUP_ID=inference-v1
+      - MODEL_PATH=distilbert-base-uncased-finetuned-sst-2-english
+    ports:
+      - "8000:8000"                  # API to host
     depends_on:
       - kafka
