@@ -38,6 +38,9 @@ services:
       - GROUP_ID=inference-v1
       - MODEL_PATH=distilbert-base-uncased-finetuned-sst-2-english
       - APP_ENV=dev
+       - HF_HOME=/app/.hf_cache          
+      - TRANSFORMERS_CACHE=/app/.hf_cache 
+      - HF_HUB_DISABLE_TELEMETRY=1     
     ports:
       - "8000:8000"                     # API to host
     depends_on:

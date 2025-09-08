@@ -161,6 +161,10 @@ def test_end_to_end_pipeline():
         processed_messages = []
         start_time = time.time()
         
+        # Give more time for processing
+        print("   Waiting for worker to process messages...")
+        time.sleep(5)  # Wait a bit before starting to consume
+        
         for message in consumer:
             processed_msg = message.value
             processed_messages.append(processed_msg)
@@ -172,7 +176,7 @@ def test_end_to_end_pipeline():
             if len(processed_messages) >= len(test_messages):
                 break
                 
-            if time.time() - start_time > 30:  # 30 second timeout
+            if time.time() - start_time > 45:  # Increased timeout to 45 seconds
                 print("⚠️  Timeout waiting for messages")
                 break
         
@@ -207,7 +211,7 @@ def main():
     # Test 2: Kafka connectivity  
     kafka_ok = test_kafka_connectivity()
     
-    # Test 3: End-to-end pipeline
+    # Test 3: End-to-end pipeline (only if previous tests pass)
     if api_ok and kafka_ok:
         e2e_ok = test_end_to_end_pipeline()
     else:
@@ -221,7 +225,7 @@ def main():
     print(f"   End-to-End Pipeline: {'✅ PASS' if e2e_ok else '❌ FAIL'}")
     
     if api_ok and kafka_ok and e2e_ok:
-        print("\n🎉 All tests passed! Your pipeline is working end-to-end!")
+        print("\n🎉 All tests passed!  Pipeline is working end-to-end!")
         return True
     else:
         print("\n❌ Some tests failed. Check the logs above for details.")

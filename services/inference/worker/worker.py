@@ -2,22 +2,11 @@ import os, json, time
 from pathlib import Path
 from dotenv import load_dotenv
 from kafka import KafkaConsumer, KafkaProducer
-try:
-    from model.models import get_sentiment_pipeline
-except ImportError:
-    import sys
-    import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from model.models import get_sentiment_pipeline
+from transformers import pipeline
 
 def load_env():
-    env_path = Path(__file__).resolve().parents[2] / ".env.dev"
-    if env_path.exists():
-        load_dotenv(env_path)
-    
-    local_env = Path(".env.dev")
-    if local_env.exists():
-        load_dotenv(local_env)
+    # Load environment variables from container env
+    pass
 
 load_env()
 
@@ -31,10 +20,12 @@ def main():
     print(f"[WORKER] Bootstrap: {BOOTSTRAP}")
     print(f"[WORKER] Consuming from: {RAW_TOPIC}")
     print(f"[WORKER] Producing to: {SCORED_TOPIC}")
+    print(f"[WORKER] Group ID: {GROUP_ID}")
     
-    # Initialize sentiment pipeline
+    # Initialize sentiment pipeline directly 
     try:
-        sentiment = get_sentiment_pipeline()
+        print(f"[WORKER] Loading sentiment model...")
+        sentiment = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
         print(f"[WORKER] Sentiment model loaded successfully")
     except Exception as e:
         print(f"[WORKER] ERROR: Failed to load sentiment model: {e}")
@@ -42,6 +33,7 @@ def main():
 
     # Setup Kafka consumer
     try:
+        print(f"[WORKER] Connecting to Kafka consumer...")
         consumer = KafkaConsumer(
             RAW_TOPIC,
             bootstrap_servers=BOOTSTRAP,
@@ -50,21 +42,22 @@ def main():
             auto_offset_reset="earliest",
             key_deserializer=lambda b : b.decode("utf-8") if b else None,
             value_deserializer=lambda b : json.loads(b.decode("utf-8")),
-            consumer_timeout_ms=1000,  # Add timeout for testing
         )
-        print(f"[WORKER] Kafka consumer connected")
+        print(f"[WORKER] Kafka consumer connected successfully")
     except Exception as e:
         print(f"[WORKER] ERROR: Failed to connect to Kafka consumer: {e}")
+        print(f"[WORKER] Bootstrap servers: {BOOTSTRAP}")
         return
 
     # Setup Kafka producer
     try:
+        print(f"[WORKER] Connecting to Kafka producer...")
         producer = KafkaProducer(
             bootstrap_servers=BOOTSTRAP,
             key_serializer=lambda k: k.encode("utf-8"),
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
-        print(f"[WORKER] Kafka producer connected")
+        print(f"[WORKER] Kafka producer connected successfully")
     except Exception as e:
         print(f"[WORKER] ERROR: Failed to connect to Kafka producer: {e}")
         return
@@ -76,6 +69,8 @@ def main():
             try:
                 payload = msg.value
                 text = payload.get("text", "")
+                
+                print(f"[WORKER] Processing message {payload.get('id')}: '{text[:50]}...'")
                 
                 # Process with sentiment model
                 result = sentiment(text)[0]
@@ -93,19 +88,24 @@ def main():
 
                 # Send to scored topic
                 producer.send(SCORED_TOPIC, key=out["id"], value=out)
-                print(f"[WORKER] Processed message {out['id']}: {result['label']} ({result['score']:.4f})")
+                producer.flush()  # Ensure message is sent
                 
-                # Small delay to avoid overwhelming
+                print(f"[WORKER] ✅ Processed message {out['id']}: {result['label']} ({result['score']:.4f})")
+                
                 time.sleep(0.01)
                 
             except Exception as e:
                 print(f"[WORKER] ERROR processing message: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
                 
     except KeyboardInterrupt:
         print(f"[WORKER] Shutting down...")
     except Exception as e:
         print(f"[WORKER] ERROR in main loop: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         consumer.close()
         producer.close()
