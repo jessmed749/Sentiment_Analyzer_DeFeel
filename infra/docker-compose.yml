@@ -26,9 +26,10 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+
   inference:
     build:
-      context: ../inference          
+      context: ../services/inference    
       dockerfile: Dockerfile
     environment:
       - KAFKA_BOOTSTRAP=kafka:9092
@@ -36,7 +37,14 @@ services:
       - SCORED_TOPIC=events.scored
       - GROUP_ID=inference-v1
       - MODEL_PATH=distilbert-base-uncased-finetuned-sst-2-english
+      - APP_ENV=dev
     ports:
-      - "8000:8000"                  # API to host
+      - "8000:8000"                     # API to host
     depends_on:
       - kafka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
