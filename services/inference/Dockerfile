@@ -8,7 +8,6 @@ WORKDIR /app
 
 ENV PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 TRANSFORMERS_CACHE=/app/.hf_cache
 
-# When building from inside inference/, these are local files:
 COPY requirements.txt /app/requirements.txt
 
 RUN python -m pip install --upgrade pip setuptools wheel && \
@@ -16,7 +15,6 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
     python -m pip install -r /app/requirements.txt
 
 COPY . /app/
-
 ENV MODEL_PATH=distilbert-base-uncased-finetuned-sst-2-english
 RUN python - <<'PY'
 from transformers import pipeline
