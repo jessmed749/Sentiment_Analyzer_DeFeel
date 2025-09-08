@@ -3,3 +3,4 @@ uvicorn[standard]==0.30.6
 transformers==4.44.2
 kafka-python==2.2.2
 python-dotenv==1.0.1
+prometheus-client
